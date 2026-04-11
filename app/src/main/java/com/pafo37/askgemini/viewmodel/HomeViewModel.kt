@@ -7,15 +7,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.ai.client.generativeai.GenerativeModel
+import com.pafo37.askgemini.BuildConfig
 import com.pafo37.askgemini.model.Message
 import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
 
-    //TODO: move somewhere safer
     val generativeModel = GenerativeModel(
         modelName = "gemini-2.5-flash",
-        apiKey = "AIzaSyBOCZRfUR7-oBbHf0Rj7AuKBr8l75_LXOE"
+        apiKey = BuildConfig.GEMINI_API_KEY
     )
 
     val chatSession = generativeModel.startChat()
