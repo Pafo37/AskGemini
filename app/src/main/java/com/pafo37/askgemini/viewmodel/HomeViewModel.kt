@@ -18,6 +18,8 @@ class HomeViewModel : ViewModel() {
         apiKey = "AIzaSyBOCZRfUR7-oBbHf0Rj7AuKBr8l75_LXOE"
     )
 
+    val chatSession = generativeModel.startChat()
+
     val messages = mutableStateListOf<Message>()
 
     var isLoading by mutableStateOf(false)
@@ -28,7 +30,7 @@ class HomeViewModel : ViewModel() {
         isLoading = true
 
         viewModelScope.launch {
-            val response = generativeModel.generateContent(userText)
+            val response = chatSession.sendMessage(userText)
             response.text?.let { messages.add(Message(it, isFromUser = false)) }
             isLoading = false
         }
