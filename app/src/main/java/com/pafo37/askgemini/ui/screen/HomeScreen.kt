@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,12 +27,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.pafo37.askgemini.model.Message
 
@@ -75,6 +78,8 @@ fun ChatInput(
                 .navigationBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val keyboardController = LocalSoftwareKeyboardController.current
+
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
@@ -86,6 +91,7 @@ fun ChatInput(
                     if (inputText.isNotEmpty()) {
                         IconButton(onClick = {
                             onSendMessage(inputText)
+                            keyboardController?.hide()
                             inputText = ""
                         }) {
                             Icon(
@@ -104,6 +110,13 @@ fun ChatInput(
 @Composable
 private fun ChatList(messages: List<Message>, isLoading: Boolean, modifier: Modifier) {
     val listState = rememberLazyListState()
+
+    LaunchedEffect(messages.size, isLoading) {
+        val totalItems = listState.layoutInfo.totalItemsCount
+        if (totalItems > 0) {
+            listState.animateScrollToItem(totalItems - 1)
+        }
+    }
 
     LazyColumn(modifier = modifier.fillMaxSize(), state = listState) {
         items(messages) { message ->
