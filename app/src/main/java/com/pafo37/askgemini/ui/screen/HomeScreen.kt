@@ -1,5 +1,10 @@
 package com.pafo37.askgemini.ui.screen
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -36,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.pafo37.askgemini.model.Message
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -64,6 +71,21 @@ fun ChatInput(
     modifier: Modifier = Modifier
 ) {
     var inputText by rememberSaveable { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.get(0) ?: ""
+
+            if (spokenText.isNotEmpty()) {
+                inputText = spokenText
+            }
+        }
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -77,8 +99,6 @@ fun ChatInput(
                 .navigationBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val keyboardController = LocalSoftwareKeyboardController.current
-
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
@@ -87,17 +107,30 @@ fun ChatInput(
                 shape = RoundedCornerShape(24.dp),
                 maxLines = 5,
                 trailingIcon = {
-                    if (inputText.isNotEmpty()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = {
-                            onSendMessage(inputText)
-                            keyboardController?.hide()
-                            inputText = ""
+                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Listening...")
+                            }
+                            speechRecognizerLauncher.launch(intent)
                         }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            Icon(Icons.Default.Mic, contentDescription = "Speech to Text")
+                        }
+
+                        if (inputText.isNotBlank()) {
+                            IconButton(onClick = {
+                                onSendMessage(inputText)
+                                keyboardController?.hide()
+                                inputText = ""
+                            }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Send",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
